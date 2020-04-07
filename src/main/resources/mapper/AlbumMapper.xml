@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ 	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="musicStore.mapper.AlbumMapper">
+	<resultMap type="Album" id="albumRM">
+		<id column="id" property="id" />
+		<result column="artist" property="artist" />
+		<result column="title" property="title" />
+		<result column="price" property="price" />
+		<result column="stock" property="stock" />
+		<result column="dateReleased" property="dateReleased" />
+		<result column="description" property="description" />
+
+		<association property="genre" javaType="Genre">
+			<id column="gid" property="id" />
+			<result column="name" property="name" />
+			<result column="gdescription" property="description" />
+		</association>
+	</resultMap>
+
+	<sql id="selectAlbum">
+		SELECT a.id AS id,
+		a.artist AS artist,
+		a.title AS title,
+		a.price AS price,
+		a.stock AS stock,
+		a.dateReleased AS dateReleased,
+		a.description AS description,
+		g.id AS gid,
+		g.name AS name,
+		g.description AS gdecription
+		FROM album a INNER JOIN genre g ON a.genreid=g.id
+	</sql>
+
+
+	<select id="findAll" resultType="Album">
+		SELECT * FROM album ORDER BY dateReleased DESC LIMIT 0,9;
+	</select>
+
+
+	<select id="findAlbumsPagings" resultMap="albumRM">
+		<include refid="selectAlbum" />
+		<where>
+			<if test="cid>0">
+				and a.GenreId=#{id}
+			</if>
+			<if test="title!=null and !title.isEmpty()">
+				and a.Title like CONCAT('%',#{title},'%')
+			</if>
+		</where>
+		limit #{startRow}, #{maxRows}
+	</select>
+
+	<select id="fetchAlbumRows" resultType="int">
+		select count(a.Id) from Album a
+		<where>
+			<if test="cid>0">
+				and a.GenreId=#{id}
+			</if>
+			<if test="title!=null and !title.isEmpty()">
+				and a.Title like CONCAT('%',#{title},'%')
+			</if>
+		</where>
+	</select>
+
+
+	<select id="findAlbums" resultMap="albumRM" parameterType="int">
+		<include refid="selectAlbum" />
+		where a.genreId=#{genreId}
+	</select>
+
+	<select id="findRows" parameterType="hashmap" resultType="int">
+		select count(a.id) from Album a join Genre g on a.genreid=g.id
+		<where>
+			<if test="genreId!=0">
+				and a.genreId=#{genreId}
+			</if>
+			<if test="title!=null and !title.isEmpty()">
+				and a.title like concat("%",#{title},"%")
+			</if>
+		</where>
+	</select>
+
+	<select id="findAlbumsByPagings" resultMap="albumRM" parameterType="hashmap" >
+        <include refid="selectAlbum"/>
+        <where>
+            <if test="genreId!=0">
+               and a.genreId=#{genreId}
+            </if>
+            <if test="title!=null and !title.isEmpty()">
+                and a.title like concat("%",#{title},"%")
+            </if>
+        </where>
+        order by a.dateReleased desc
+        limit #{firstResult},#{maxResult}
+    </select>
+	
+	<select id="fetchById" parameterType="int" resultType="Album">
+		select * from Album where id=#{id}
+	</select>
+
+	<insert id="add" parameterType="Album" useGeneratedKeys="true"
+		keyProperty="id">
+		INSERT INTO Album(title, artist, GenreId, price, dateReleased,description)
+		VALUES
+		(#{title},#{artist},#{genreId},#{price},#{dateReleased},#{description})
+	</insert>
+
+	<update id="update" parameterType="Album">
+		update Album set
+		title=#{title},Artist=#{artist},GenreId=#{genreId},Price=#{price},DateReleased=#{dateReleased},Description=#{description}
+		where id=#{id}
+	</update>
+</mapper>
